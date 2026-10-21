@@ -9,9 +9,40 @@
 
 #include "rk3566-radxa-cm3.dtsi"
 
+/delete-node/ &user_led;
+
 / {
 	model = "Radxa Compute Module 3(CM3) IO Board";
 	compatible = "radxa,cm3-io", "radxa,cm3", "rockchip,rk3566";
+
+	config {
+		u-boot,dm-pre-reloc;
+		u-boot,dm-spl;
+		/*
+		 * GPIO0_B2/SYS_LED1 and GPIO0_A2/SYS_LED2 are PMIC signals.
+		 */
+		radxa,boot-low-gpios =
+			<&gpio0 RK_PC4 GPIO_ACTIVE_HIGH>, /* POWER_EN */
+			<&gpio4 RK_PC1 GPIO_ACTIVE_HIGH>, /* SYS_LED3 */
+			<&gpio4 RK_PA4 GPIO_ACTIVE_HIGH>, /* GPIO_O1 */
+			<&gpio0 RK_PC2 GPIO_ACTIVE_HIGH>, /* GPIO_O2 */
+			<&gpio3 RK_PD1 GPIO_ACTIVE_HIGH>, /* GPIO_O3 */
+			<&gpio3 RK_PD0 GPIO_ACTIVE_HIGH>, /* GPIO_O4 */
+			<&gpio3 RK_PD2 GPIO_ACTIVE_HIGH>, /* GPIO_O5 */
+			<&gpio4 RK_PA7 GPIO_ACTIVE_HIGH>, /* GPIO_O6 */
+			<&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>, /* GPIO_O7 */
+			<&gpio4 RK_PC0 GPIO_ACTIVE_HIGH>, /* GPIO_O8 */
+			<&gpio0 RK_PC3 GPIO_ACTIVE_HIGH>; /* GPIO_BUZZER */
+		radxa,boot-input-gpios =
+			<&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>, /* GPIO_IN1 */
+			<&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>, /* GPIO_IN2 */
+			<&gpio3 RK_PD3 GPIO_ACTIVE_HIGH>, /* GPIO_IN3 */
+			<&gpio3 RK_PD4 GPIO_ACTIVE_HIGH>, /* GPIO_IN4 */
+			<&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>, /* GPIO_IN5 */
+			<&gpio0 RK_PC7 GPIO_ACTIVE_HIGH>, /* GPIO_IN6 */
+			<&gpio3 RK_PC7 GPIO_ACTIVE_HIGH>, /* GPIO_IN7 */
+			<&gpio3 RK_PD5 GPIO_ACTIVE_HIGH>; /* GPIO_IN8 */
+	};
 
 	dc_12v: dc-12v {
 		u-boot,dm-pre-reloc;
@@ -32,34 +63,6 @@
 		vin-supply = <&dc_12v>;
 	};
 
-	pcie_en: pcie-en {
-		u-boot,dm-pre-reloc;
-		compatible = "regulator-fixed";
-		regulator-name = "pcie_en";
-		enable-active-low;
-		gpio = <&gpio3 RK_PC6 GPIO_ACTIVE_LOW>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	pi_led_green: pi-led-green {
-		u-boot,dm-pre-reloc;
-		compatible = "regulator-fixed";
-		regulator-name = "pi_led_green";
-		gpio = <&gpio4 RK_PA4 GPIO_ACTIVE_LOW>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	pwr_led_red: pwr-led-red {
-		u-boot,dm-pre-reloc;
-		compatible = "regulator-fixed";
-		regulator-name = "pwr_led_red";
-		gpio = <&gpio4 RK_PB7 GPIO_ACTIVE_LOW>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
 	adc-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 0>;
@@ -77,13 +80,26 @@
 	};
 };
 
+&gpio0 {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	status = "okay";
+};
+
 &gpio1 {
 	u-boot,dm-pre-reloc;
 	status = "okay";
 };
 
+&gpio3 {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	status = "okay";
+};
+
 &gpio4 {
 	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
 	status = "okay";
 };
 
@@ -109,6 +125,41 @@
 };
 
 &pinctrl {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	pinctrl-names = "default";
+	pinctrl-0 = <&carrier_boot_low_pins>;
+
+	carrier {
+		u-boot,dm-pre-reloc;
+		u-boot,dm-spl;
+
+		carrier_boot_low_pins: carrier-boot-low-pins {
+			u-boot,dm-pre-reloc;
+			u-boot,dm-spl;
+			/* Directions are set by the early board hook. */
+			rockchip,pins =
+				<0 RK_PC4 RK_FUNC_GPIO &pcfg_pull_down>,
+				<4 RK_PC1 RK_FUNC_GPIO &pcfg_pull_down>,
+				<4 RK_PA4 RK_FUNC_GPIO &pcfg_pull_down>,
+				<0 RK_PC2 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PD0 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PD2 RK_FUNC_GPIO &pcfg_pull_down>,
+				<4 RK_PA7 RK_FUNC_GPIO &pcfg_pull_down>,
+				<0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_down>,
+				<4 RK_PC0 RK_FUNC_GPIO &pcfg_pull_down>,
+				<0 RK_PC3 RK_FUNC_GPIO &pcfg_pull_down>,
+				<4 RK_PB1 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PC6 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PD3 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PD4 RK_FUNC_GPIO &pcfg_pull_down>,
+				<0 RK_PB7 RK_FUNC_GPIO &pcfg_pull_down>,
+				<0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PC7 RK_FUNC_GPIO &pcfg_pull_down>,
+				<3 RK_PD5 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
 
 	pcie20 {
 		u-boot,dm-pre-reloc;
@@ -124,4 +175,9 @@
 				<1 RK_PB1 4 &pcfg_pull_none>;
 		};
 	};
+};
+
+&pcfg_pull_down {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
 };

@@ -14,9 +14,77 @@
 #include <common.h>
 #include <dm.h>
 #include <adc.h>
+#include <asm/gpio.h>
 #include <asm-generic/global_data.h>
+#include <dm/ofnode.h>
+#include <linux/errno.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+#if !defined(CONFIG_TPL_BUILD) && \
+	((defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_GPIO_SUPPORT)) || \
+	 (!defined(CONFIG_SPL_BUILD) && defined(CONFIG_BOARD_EARLY_INIT_R)))
+static int cm3_request_boot_gpios(ofnode config, const char *property,
+				  int flags)
+{
+	struct gpio_desc gpio;
+	int count, i, ret;
+
+	count = ofnode_count_phandle_with_args(config, property, "#gpio-cells");
+	if (count <= 0)
+		return count < 0 ? count : -EINVAL;
+
+	for (i = 0; i < count; i++) {
+		ret = gpio_request_by_name_nodev(config, property, i,
+						 &gpio, flags);
+		if (ret) {
+			printf("CM3 boot GPIO %s[%d] failed: %d\n",
+			       property, i, ret);
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+static int cm3_io_boot_gpio_init(void)
+{
+	ofnode config;
+	int ret;
+
+	if (!of_machine_is_compatible("radxa,cm3-io"))
+		return 0;
+
+	config = ofnode_path("/config");
+	if (!ofnode_valid(config))
+		return -ENOENT;
+
+	/* ACTIVE_HIGH plus IS_OUT initializes each output latch low. */
+	ret = cm3_request_boot_gpios(config, "radxa,boot-low-gpios",
+				     GPIOD_IS_OUT);
+	if (ret)
+		return ret;
+
+	return cm3_request_boot_gpios(config, "radxa,boot-input-gpios",
+				      GPIOD_IS_IN);
+}
+
+#ifdef CONFIG_SPL_BUILD
+int rk_board_init_f(void)
+{
+	if (cm3_io_boot_gpio_init())
+		hang();
+
+	return 0;
+}
+#else
+/* OF_LIVE is ready here; SPL has already established the initial levels. */
+int board_early_init_r(void)
+{
+	return cm3_io_boot_gpio_init();
+}
+#endif
+#endif
 
 #define SARADC_ADDR	"saradc@fe720000"
 #define HW_ID_CHANNEL	1
